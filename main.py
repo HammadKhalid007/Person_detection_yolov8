@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolov8n.pt')
 
-cap = cv2.VideoCapture("12.mp4")
+cap = cv2.VideoCapture(0)
 
 desired_width = 640
 desired_height = 480
@@ -111,7 +111,7 @@ while ret:
                 bbox = (box[0], box[1], box[2] - box[0], box[3] - box[1])
                 tracker.init(frame, bbox)
                 trackers[object_id] = (tracker, current_time)
-                
+
         bounding_boxes = active_bounding_boxes
         object_ids = active_object_ids
 
