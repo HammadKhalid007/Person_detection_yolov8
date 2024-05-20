@@ -54,3 +54,78 @@ def handle_mouse_click(event, x, y, flags, param):
 
 cv2.namedWindow("Video Stream")
 cv2.setMouseCallback("Video Stream", handle_mouse_click)
+
+ret = True
+while ret:
+    ret, frame = cap.read()
+    if ret:
+        frame = cv2.resize(frame, (desired_width, desired_height))
+        results = model.track(frame, persist=True)
+        new_bounding_boxes = []
+        new_object_ids = []
+
+        current_time = time.time()
+
+        for result in results:
+            for box in result.boxes:
+                class_id = result.names[box.cls[0].item()]
+                if class_id == 'person':
+                    cords = box.xyxy[0].tolist()
+                    cords = [round(x) for x in cords]
+                    new_bounding_boxes.append(cords)
+                    new_object_ids.append(box.id[0].item() if box.id is not None else len(new_object_ids))
+                    if box.id is not None:
+                        last_seen[box.id[0].item()] = current_time
+
+        # Update existing trackers and remove those that have timed out
+        active_bounding_boxes = []
+        active_object_ids = []
+
+        for object_id in list(trackers.keys()):
+            if object_id in trackers:
+                tracker, start_time = trackers[object_id]
+                success, bbox = tracker.update(frame)
+                if success:
+                    (x, y, w, h) = [int(v) for v in bbox]
+                    active_bounding_boxes.append([x, y, x + w, y + h])
+                    active_object_ids.append(object_id)
+                    last_seen[object_id] = current_time
+
+                    # Reset last seen time if person is detected again
+                    if object_id in new_object_ids:
+                        last_seen[object_id] = current_time
+
+                    # Check if tracker should be removed due to timeout
+                    if current_time - start_time > timeout:
+                        print(f"Stopping tracker for object_id {object_id} due to timeout.")
+                        del trackers[object_id]
+                else:
+                    print(f"Tracker failed for object_id {object_id}.")
+                    del trackers[object_id]
+
+        # Initialize new trackers for newly detected persons
+        for i, box in enumerate(new_bounding_boxes):
+            object_id = new_object_ids[i]
+            if object_id not in trackers:
+                tracker = cv2.TrackerCSRT_create()
+                bbox = (box[0], box[1], box[2] - box[0], box[3] - box[1])
+                tracker.init(frame, bbox)
+                trackers[object_id] = (tracker, current_time)
+                
+        bounding_boxes = active_bounding_boxes
+        object_ids = active_object_ids
+
+        for i, object_id in enumerate(object_ids):
+            if object_id not in colors:
+                colors[object_id] = generate_unique_color(colors.values())
+
+        draw_boxes(frame, bounding_boxes, object_ids)
+        selected_objects = [object_id for object_id in object_ids if object_id == selected_object_id]
+        print(f"Selected Object IDs: {selected_objects}")
+
+        cv2.imshow("Video Stream", frame)
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+
+cv2.destroyAllWindows()
+cap.release()
