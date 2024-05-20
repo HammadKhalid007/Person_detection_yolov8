@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolov8n.pt')
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("12.mp4")
 
 desired_width = 640
 desired_height = 480
