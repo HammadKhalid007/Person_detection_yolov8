@@ -27,3 +27,30 @@ def generate_unique_color(exclude_colors):
             continue
         if color not in exclude_colors:
             return color
+
+def draw_boxes(frame, boxes, ids):
+    for i, box in enumerate(boxes):
+        if box is not None:
+            (x1, y1, x2, y2) = box
+            object_id = ids[i]
+            color = colors.get(object_id, (0, 255, 0))
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            if object_id == selected_object_id:
+                elapsed_time = int(time.time() - timer_start)
+                cv2.putText(frame, f'Timer: {elapsed_time}s', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+def handle_mouse_click(event, x, y, flags, param):
+    global selected_object_id, timer_start
+    if event == cv2.EVENT_LBUTTONDOWN:
+        for i, (box, object_id) in enumerate(zip(bounding_boxes, object_ids)):
+            (x1, y1, x2, y2) = box
+            if x1 <= x <= x2 and y1 <= y <= y2:
+                if selected_object_id is not None:
+                    colors[selected_object_id] = generate_unique_color(colors.values())
+                selected_object_id = object_id
+                colors[object_id] = (0, 0, 255)
+                timer_start = time.time()
+                break
+
+cv2.namedWindow("Video Stream")
+cv2.setMouseCallback("Video Stream", handle_mouse_click)
