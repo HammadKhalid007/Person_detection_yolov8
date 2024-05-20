@@ -2,7 +2,7 @@
 
 - Demonstrates object tracking using YOLO and OpenCV.
 - Interactive selection of objects for tracking based on mouse clicks.
-- Automatic removal of trackers after 2 seconds of lost detection.
+- Automatic removal of trackers after 10 seconds of lost detection.
 
 ## Overview
 
