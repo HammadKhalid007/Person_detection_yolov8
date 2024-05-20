@@ -4,3 +4,4 @@ torchvision==0.13.0
 numpy==1.21.2
 scipy
 opencv-contrib-python
+ultralytics
